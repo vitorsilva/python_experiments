@@ -38,18 +38,37 @@ options:
 ```markdown
 # filename_without_extension
 
+---
+
 ## <title-col value for row 1>
+
+---
+
 ### Objective and key results
+
+---
+
 ...content...
+
 ### Status
+
+---
+
 ...content...
 
 ## <title-col value for row 2>
+
+---
+
 ### Objective and key results
+
+---
+
 ...
 ```
 
 - Top-level `#` heading: input filename without extension
+- A `---` horizontal rule follows every heading (`#`, `##`, `###`)
 - One `##` section per row, using the value from `--title-col`
 - One `###` sub-section per remaining column (title column excluded)
 - Sub-section order follows the order columns are defined in `--columns`
@@ -119,3 +138,4 @@ python excel_to_md.py data/requests.xlsx \
 - [ ] Top-level `#` heading is the input filename without extension
 - [ ] Output file defaults to same directory and name as input with `.md` extension
 - [ ] Missing file / sheet / column produces a clear error message
+- [ ] A `---` horizontal rule follows every heading at every level (`#`, `##`, `###`)

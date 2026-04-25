@@ -53,15 +53,20 @@ def validate_columns(df: pd.DataFrame, columns: list[str]) -> None:
 
 def build_markdown(df: pd.DataFrame, filename: str, title_col: str, columns: list[str]) -> str:
     sub_cols = [c for c in columns if c != title_col]
-    lines = [f"# {filename}", ""]
+    lines = [f"# {filename}", "", "---", ""]
 
     for _, row in df.iterrows():
         title_value = format_value(row[title_col])
         lines.append(f"## {title_value}")
         lines.append("")
+        lines.append("---")
+        lines.append("")
 
         for col in sub_cols:
             lines.append(f"### {col}")
+            lines.append("")
+            lines.append("---")
+            lines.append("")
             lines.append(format_value(row[col]))
             lines.append("")
 
