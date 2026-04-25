@@ -23,6 +23,9 @@ options:
   --title-col TEXT      Column used as the ### heading per row (default: "User Story")
   --columns TEXT [...]  Ordered list of columns to include (default: the 8 agreed columns)
   --prefix TEXT         String prepended to every heading value at all levels (default: "")
+  --filter-col TEXT     Column used to filter rows (default: "Status")
+  --exclude TEXT [...]  Values in filter-col that cause a row to be skipped,
+                        case-insensitive (default: "cancelled" "close")
   --output FILE         Output .md file path (default: same dir/name as input, .md extension)
 ```
 
@@ -84,20 +87,30 @@ options:
 - Empty/blank cells rendered as `N/A`
 - The title column (`--title-col`) does NOT appear as a `####` sub-section
 
+## Row Filtering
+
+- Controlled by `--filter-col` (default: `"Status"`) and `--exclude` (default: `"cancelled" "close"`)
+- Rows where the filter column value matches any excluded value are dropped before output
+- Matching is **case-insensitive** and trims surrounding whitespace
+- The filter column does **not** need to appear in `--columns`; it is used solely for filtering
+- If the filter column is not found in the sheet a warning is printed to stderr and filtering is skipped
+
 ## Logic / Implementation Steps
 
 1. Parse CLI arguments; apply defaults
 2. Load the specified sheet from the Excel file using pandas
 3. Validate that all requested columns exist in the sheet; exit with a clear error if not
-4. Exclude the title column from the sub-section columns list
-5. Emit `# <prefix><title>` (title falls back to filename stem if `--title` not provided) then `---`
-6. Emit `## <prefix><type>` then `---`
-7. For each row:
+4. If `--filter-col` exists in the sheet, drop rows whose filter-col value (case-insensitive) matches any value in `--exclude`; otherwise warn and continue
+5. Exclude the title column from the sub-section columns list
+6. Emit `# <prefix><title>` (title falls back to filename stem if `--title` not provided) then `---`
+7. Emit `## <prefix><type>` then `---`
+8. For each remaining row:
    a. Emit `### <prefix><title-col value>` (or `### <prefix>N/A` if blank) then `---`
    b. For each remaining column (in specified order):
-      - Emit `#### <prefix><column name>` then `---`
+      - Emit `#### <prefix><column name>`
       - Emit the cell value; format datetime values as `yyyy.mm.dd`; blanks as `N/A`
-8. Write the full markdown string to the output file
+      - Emit `---`
+9. Write the full markdown string to the output file
 
 ## Date Handling
 - Auto-detect datetime columns via pandas dtype (no manual flagging needed)
@@ -141,6 +154,21 @@ Subset of columns in a specific order:
 python excel_to_md.py data/requests.xlsx --columns "User Story" "Status" "Priority" "Observations"
 ```
 
+Filter rows by status (use defaults — drops "cancelled" and "close"):
+```bash
+python excel_to_md.py data/requests.xlsx
+```
+
+Custom filter column and excluded values:
+```bash
+python excel_to_md.py data/requests.xlsx --filter-col "Priority" --exclude "Low" "Medium"
+```
+
+Disable filtering entirely (pass an empty exclude list is not supported; use a value that won't appear):
+```bash
+python excel_to_md.py data/requests.xlsx --exclude "__none__"
+```
+
 With a heading prefix:
 ```bash
 python excel_to_md.py data/requests.xlsx --prefix "A."
@@ -156,6 +184,8 @@ python excel_to_md.py data/requests.xlsx \
   --title-col "User Story" \
   --columns "User Story" "Objective and key results" "People and responsabilities" "Status" "Request date" "Wanted date" "Priority" "Observations" \
   --prefix "A." \
+  --filter-col "Status" \
+  --exclude "cancelled" "close" \
   --output output/report.md
 ```
 
@@ -170,5 +200,8 @@ python excel_to_md.py data/requests.xlsx \
 - [ ] Output file defaults to same directory and name as input with `.md` extension
 - [ ] Missing file / sheet / column produces a clear error message
 - [ ] `--prefix` string is prepended to every heading value at all levels; empty by default (no prefix)
+- [ ] Rows where `--filter-col` value (case-insensitive) matches any `--exclude` value are dropped before output
+- [ ] Filter column does not need to be in `--columns`
+- [ ] If filter column is absent from the sheet a warning is printed and filtering is skipped
 - [ ] A `---` horizontal rule follows every heading at levels `#`, `##`, `###` (before nested content)
 - [ ] At `####` level the `---` comes **after** the cell content, not between the heading and content

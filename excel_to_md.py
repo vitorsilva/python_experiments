@@ -7,6 +7,8 @@ import pandas as pd
 DEFAULT_SHEET = "Requests"
 DEFAULT_TYPE = "Demand Planning"
 DEFAULT_TITLE_COL = "User Story"
+DEFAULT_FILTER_COL = "Status"
+DEFAULT_EXCLUDE = ["cancelled", "close"]
 DEFAULT_COLUMNS = [
     "User Story",
     "Objective and key results",
@@ -40,6 +42,18 @@ def load_sheet(file_path: Path, sheet_name: str) -> pd.DataFrame:
             available = "unknown"
         sys.exit(f"Error: sheet '{sheet_name}' not found. Available sheets: {available}")
     return df
+
+
+def filter_rows(df: pd.DataFrame, filter_col: str, exclude: list[str]) -> pd.DataFrame:
+    if filter_col not in df.columns:
+        print(
+            f"Warning: filter column '{filter_col}' not found in sheet, skipping filter.",
+            file=sys.stderr,
+        )
+        return df
+    exclude_lower = {v.lower().strip() for v in exclude}
+    mask = df[filter_col].astype(str).str.lower().str.strip().isin(exclude_lower)
+    return df[~mask]
 
 
 def validate_columns(df: pd.DataFrame, columns: list[str]) -> None:
@@ -115,6 +129,18 @@ def parse_args() -> argparse.Namespace:
         help="String prepended to every heading value at all levels (default: none)",
     )
     parser.add_argument(
+        "--filter-col",
+        default=DEFAULT_FILTER_COL,
+        help='Column used to filter rows (default: "Status")',
+    )
+    parser.add_argument(
+        "--exclude",
+        nargs="+",
+        default=DEFAULT_EXCLUDE,
+        metavar="VALUE",
+        help='Values in filter-col that cause a row to be skipped, case-insensitive (default: "cancelled" "close")',
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=None,
@@ -132,6 +158,8 @@ def main() -> None:
 
     all_cols = args.columns if args.title_col in args.columns else [args.title_col] + args.columns
     validate_columns(df, all_cols)
+
+    df = filter_rows(df, args.filter_col, args.exclude)
 
     title = args.title or args.file.stem
     markdown = build_markdown(df, title, args.type, args.title_col, all_cols, args.prefix)
