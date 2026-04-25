@@ -18,6 +18,7 @@ positional:
 
 options:
   --sheet TEXT          Sheet name to read (default: "Requests")
+  --title TEXT          Text used as the # document heading (default: filename without extension)
   --type TEXT           Label used as the ## grouping heading (default: "Demand Planning")
   --title-col TEXT      Column used as the ### heading per row (default: "User Story")
   --columns TEXT [...]  Ordered list of columns to include (default: the 8 agreed columns)
@@ -72,7 +73,7 @@ options:
 ...
 ```
 
-- Top-level `#` heading: input filename without extension
+- Top-level `#` heading: value from `--title` (default: input filename without extension)
 - `##` heading: fixed label from `--type` (default: "Demand Planning"), emitted once
 - `###` heading: one per row, value from `--title-col`
 - `####` heading: one per remaining column (title column excluded)
@@ -87,7 +88,7 @@ options:
 2. Load the specified sheet from the Excel file using pandas
 3. Validate that all requested columns exist in the sheet; exit with a clear error if not
 4. Exclude the title column from the sub-section columns list
-5. Emit `# <filename>` then `---`
+5. Emit `# <title>` (falls back to filename stem if `--title` not provided) then `---`
 6. Emit `## <type>` then `---`
 7. For each row:
    a. Emit `### <title-col value>` (or `### N/A` if blank) then `---`
@@ -107,10 +108,15 @@ options:
 
 ## Example Calls
 
-Default run (all 8 columns, sheet "Requests", type "Demand Planning", title "User Story"):
+Default run (all 8 columns, sheet "Requests", type "Demand Planning", title col "User Story", # heading = filename):
 ```bash
 python excel_to_md.py data/requests.xlsx
 # → writes data/requests.md
+```
+
+Custom document title:
+```bash
+python excel_to_md.py data/requests.xlsx --title "Q1 2024 Requests"
 ```
 
 Different sheet:
@@ -137,6 +143,7 @@ Full explicit call:
 ```bash
 python excel_to_md.py data/requests.xlsx \
   --sheet "Requests" \
+  --title "Q1 2024 Requests" \
   --type "Demand Planning" \
   --title-col "User Story" \
   --columns "User Story" "Objective and key results" "People and responsabilities" "Status" "Request date" "Wanted date" "Priority" "Observations" \
@@ -150,7 +157,7 @@ python excel_to_md.py data/requests.xlsx \
 - [ ] Sub-sections (`####`) follow `--columns` order
 - [ ] Empty cells render as `N/A`
 - [ ] Datetime columns formatted as `yyyy.mm.dd`
-- [ ] Top-level `#` heading is the input filename without extension
+- [ ] Top-level `#` heading uses `--title` value, falling back to filename without extension
 - [ ] Output file defaults to same directory and name as input with `.md` extension
 - [ ] Missing file / sheet / column produces a clear error message
 - [ ] A `---` horizontal rule follows every heading at every level (`#`, `##`, `###`, `####`)

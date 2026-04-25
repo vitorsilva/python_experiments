@@ -53,10 +53,10 @@ def validate_columns(df: pd.DataFrame, columns: list[str]) -> None:
 
 
 def build_markdown(
-    df: pd.DataFrame, filename: str, type_label: str, title_col: str, columns: list[str]
+    df: pd.DataFrame, title: str, type_label: str, title_col: str, columns: list[str]
 ) -> str:
     sub_cols = [c for c in columns if c != title_col]
-    lines = [f"# {filename}", "", "---", "", f"## {type_label}", "", "---", ""]
+    lines = [f"# {title}", "", "---", "", f"## {type_label}", "", "---", ""]
 
     for _, row in df.iterrows():
         title_value = format_value(row[title_col])
@@ -82,6 +82,11 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("file", type=Path, help="Path to the Excel file")
     parser.add_argument("--sheet", default=DEFAULT_SHEET, help='Sheet name (default: "Requests")')
+    parser.add_argument(
+        "--title",
+        default=None,
+        help="Text for the # document heading (default: filename without extension)",
+    )
     parser.add_argument(
         "--type",
         default=DEFAULT_TYPE,
@@ -118,7 +123,8 @@ def main() -> None:
     all_cols = args.columns if args.title_col in args.columns else [args.title_col] + args.columns
     validate_columns(df, all_cols)
 
-    markdown = build_markdown(df, args.file.stem, args.type, args.title_col, all_cols)
+    title = args.title or args.file.stem
+    markdown = build_markdown(df, title, args.type, args.title_col, all_cols)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(markdown, encoding="utf-8")
