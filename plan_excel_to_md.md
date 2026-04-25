@@ -7,6 +7,8 @@ Load an Excel file, extract specified columns from a given sheet, and generate a
 - `pandas` — data loading and manipulation
 - `openpyxl` — Excel backend for pandas
 - `argparse` — CLI interface (stdlib)
+- `random` — lorem ipsum word sampling (stdlib)
+- `datetime` — random date generation (stdlib)
 
 ## CLI Interface
 
@@ -26,6 +28,7 @@ options:
   --filter-col TEXT     Column used to filter rows (default: "Status")
   --exclude TEXT [...]  Values in filter-col that cause a row to be skipped,
                         case-insensitive (default: "cancelled" "close")
+  --jibberish           Replace all cell content with random lorem ipsum text (default: off)
   --output FILE         Output .md file path (default: same dir/name as input, .md extension)
 ```
 
@@ -87,6 +90,19 @@ options:
 - Empty/blank cells rendered as `N/A`
 - The title column (`--title-col`) does NOT appear as a `####` sub-section
 
+## Jibberish Mode (`--jibberish`)
+
+When `--jibberish` is set, all cell values (including the title column) are replaced with
+randomly generated lorem ipsum content. Column names are preserved unchanged.
+
+Replacement rules (applied to the formatted string value):
+- `N/A` → kept as `N/A`
+- `yyyy.mm.dd` date → random date in the range 2020–2030, same format
+- Numeric value → random integer 1–999
+- Text → random lorem ipsum words sampled to match the original word count
+
+The `--jibberish` flag uses the same output path logic as normal mode.
+
 ## Row Filtering
 
 - Controlled by `--filter-col` (default: `"Status"`) and `--exclude` (default: `"cancelled" "close"`)
@@ -110,7 +126,8 @@ options:
       - Emit `#### <prefix><column name>`
       - Emit the cell value; format datetime values as `yyyy.mm.dd`; blanks as `N/A`
       - Emit `---`
-9. Write the full markdown string to the output file
+9. If `--jibberish`, use the jibberish value formatter instead of the standard one
+10. Write the full markdown string to the output file
 
 ## Date Handling
 - Auto-detect datetime columns via pandas dtype (no manual flagging needed)
@@ -169,6 +186,11 @@ Disable filtering entirely (pass an empty exclude list is not supported; use a v
 python excel_to_md.py data/requests.xlsx --exclude "__none__"
 ```
 
+Generate a jibberish version for safe sharing or testing:
+```bash
+python excel_to_md.py data/requests.xlsx --jibberish
+```
+
 With a heading prefix:
 ```bash
 python excel_to_md.py data/requests.xlsx --prefix "A."
@@ -203,5 +225,8 @@ python excel_to_md.py data/requests.xlsx \
 - [ ] Rows where `--filter-col` value (case-insensitive) matches any `--exclude` value are dropped before output
 - [ ] Filter column does not need to be in `--columns`
 - [ ] If filter column is absent from the sheet a warning is printed and filtering is skipped
+- [ ] `--jibberish` replaces all cell values with lorem ipsum; column names are unchanged
+- [ ] `N/A` cells remain `N/A` in jibberish mode
+- [ ] Dates become random dates; numbers become random integers; text matches original word count
 - [ ] A `---` horizontal rule follows every heading at levels `#`, `##`, `###` (before nested content)
 - [ ] At `####` level the `---` comes **after** the cell content, not between the heading and content

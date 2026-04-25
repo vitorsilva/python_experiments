@@ -1,8 +1,22 @@
 import argparse
+import random
 import sys
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
+
+_LOREM_WORDS = [
+    "lorem", "ipsum", "dolor", "sit", "amet", "consectetur", "adipiscing", "elit",
+    "sed", "do", "eiusmod", "tempor", "incididunt", "ut", "labore", "et", "dolore",
+    "magna", "aliqua", "enim", "ad", "minim", "veniam", "quis", "nostrud",
+    "exercitation", "ullamco", "laboris", "nisi", "aliquip", "ex", "ea", "commodo",
+    "consequat", "duis", "aute", "irure", "in", "reprehenderit", "voluptate",
+    "velit", "esse", "cillum", "fugiat", "nulla", "pariatur", "excepteur", "sint",
+    "occaecat", "cupidatat", "non", "proident", "sunt", "culpa", "qui", "officia",
+    "deserunt", "mollit", "anim", "id", "est", "laborum",
+]
+_LOREM_DATE_START = date(2020, 1, 1)
 
 DEFAULT_SHEET = "Requests"
 DEFAULT_TYPE = "Demand Planning"
@@ -19,6 +33,26 @@ DEFAULT_COLUMNS = [
     "Priority",
     "Observations",
 ]
+
+
+def _jibberish_formatted(text: str) -> str:
+    try:
+        datetime.strptime(text, "%Y.%m.%d")
+        return (_LOREM_DATE_START + timedelta(days=random.randint(0, 3650))).strftime("%Y.%m.%d")
+    except ValueError:
+        pass
+    try:
+        float(text)
+        return str(random.randint(1, 999))
+    except ValueError:
+        pass
+    word_count = max(1, len(text.split()))
+    return " ".join(random.choices(_LOREM_WORDS, k=word_count))
+
+
+def jibberish_value(value) -> str:
+    formatted = format_value(value)
+    return "N/A" if formatted == "N/A" else _jibberish_formatted(formatted)
 
 
 def format_value(value) -> str:
@@ -73,12 +107,15 @@ def build_markdown(
     title_col: str,
     columns: list[str],
     prefix: str,
+    value_fn=None,
 ) -> str:
+    if value_fn is None:
+        value_fn = format_value
     sub_cols = [c for c in columns if c != title_col]
     lines = [f"# {prefix}{title}", "", "---", "", f"## {prefix}{type_label}", "", "---", ""]
 
     for _, row in df.iterrows():
-        title_value = format_value(row[title_col])
+        title_value = value_fn(row[title_col])
         lines.append(f"### {prefix}{title_value}")
         lines.append("")
         lines.append("---")
@@ -87,7 +124,7 @@ def build_markdown(
         for col in sub_cols:
             lines.append(f"#### {prefix}{col}")
             lines.append("")
-            lines.append(format_value(row[col]))
+            lines.append(value_fn(row[col]))
             lines.append("")
             lines.append("---")
             lines.append("")
@@ -129,6 +166,11 @@ def parse_args() -> argparse.Namespace:
         help="String prepended to every heading value at all levels (default: none)",
     )
     parser.add_argument(
+        "--jibberish",
+        action="store_true",
+        help="Replace all cell content with random lorem ipsum text (column names are kept)",
+    )
+    parser.add_argument(
         "--filter-col",
         default=DEFAULT_FILTER_COL,
         help='Column used to filter rows (default: "Status")',
@@ -162,7 +204,8 @@ def main() -> None:
     df = filter_rows(df, args.filter_col, args.exclude)
 
     title = args.title or args.file.stem
-    markdown = build_markdown(df, title, args.type, args.title_col, all_cols, args.prefix)
+    value_fn = jibberish_value if args.jibberish else format_value
+    markdown = build_markdown(df, title, args.type, args.title_col, all_cols, args.prefix, value_fn)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(markdown, encoding="utf-8")
