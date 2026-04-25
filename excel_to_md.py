@@ -73,9 +73,9 @@ def build_markdown(
         for col in sub_cols:
             lines.append(f"#### {prefix}{col}")
             lines.append("")
-            lines.append("---")
-            lines.append("")
             lines.append(format_value(row[col]))
+            lines.append("")
+            lines.append("---")
             lines.append("")
 
     return "\n".join(lines)

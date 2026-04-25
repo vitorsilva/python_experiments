@@ -170,4 +170,5 @@ python excel_to_md.py data/requests.xlsx \
 - [ ] Output file defaults to same directory and name as input with `.md` extension
 - [ ] Missing file / sheet / column produces a clear error message
 - [ ] `--prefix` string is prepended to every heading value at all levels; empty by default (no prefix)
-- [ ] A `---` horizontal rule follows every heading at every level (`#`, `##`, `###`, `####`)
+- [ ] A `---` horizontal rule follows every heading at levels `#`, `##`, `###` (before nested content)
+- [ ] At `####` level the `---` comes **after** the cell content, not between the heading and content
