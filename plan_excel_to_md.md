@@ -22,6 +22,7 @@ options:
   --type TEXT           Label used as the ## grouping heading (default: "Demand Planning")
   --title-col TEXT      Column used as the ### heading per row (default: "User Story")
   --columns TEXT [...]  Ordered list of columns to include (default: the 8 agreed columns)
+  --prefix TEXT         String prepended to every heading value at all levels (default: "")
   --output FILE         Output .md file path (default: same dir/name as input, .md extension)
 ```
 
@@ -77,6 +78,7 @@ options:
 - `##` heading: fixed label from `--type` (default: "Demand Planning"), emitted once
 - `###` heading: one per row, value from `--title-col`
 - `####` heading: one per remaining column (title column excluded)
+- `--prefix` string is prepended directly to every heading value at all levels (default: `""`)
 - A `---` horizontal rule follows every heading at every level (`#`, `##`, `###`, `####`)
 - Sub-section order follows the order columns are defined in `--columns`
 - Empty/blank cells rendered as `N/A`
@@ -88,12 +90,12 @@ options:
 2. Load the specified sheet from the Excel file using pandas
 3. Validate that all requested columns exist in the sheet; exit with a clear error if not
 4. Exclude the title column from the sub-section columns list
-5. Emit `# <title>` (falls back to filename stem if `--title` not provided) then `---`
-6. Emit `## <type>` then `---`
+5. Emit `# <prefix><title>` (title falls back to filename stem if `--title` not provided) then `---`
+6. Emit `## <prefix><type>` then `---`
 7. For each row:
-   a. Emit `### <title-col value>` (or `### N/A` if blank) then `---`
+   a. Emit `### <prefix><title-col value>` (or `### <prefix>N/A` if blank) then `---`
    b. For each remaining column (in specified order):
-      - Emit `#### <column name>` then `---`
+      - Emit `#### <prefix><column name>` then `---`
       - Emit the cell value; format datetime values as `yyyy.mm.dd`; blanks as `N/A`
 8. Write the full markdown string to the output file
 
@@ -139,6 +141,12 @@ Subset of columns in a specific order:
 python excel_to_md.py data/requests.xlsx --columns "User Story" "Status" "Priority" "Observations"
 ```
 
+With a heading prefix:
+```bash
+python excel_to_md.py data/requests.xlsx --prefix "A."
+# headings become: # A.requests, ## A.Demand Planning, ### A.Story A, #### A.Status …
+```
+
 Full explicit call:
 ```bash
 python excel_to_md.py data/requests.xlsx \
@@ -147,6 +155,7 @@ python excel_to_md.py data/requests.xlsx \
   --type "Demand Planning" \
   --title-col "User Story" \
   --columns "User Story" "Objective and key results" "People and responsabilities" "Status" "Request date" "Wanted date" "Priority" "Observations" \
+  --prefix "A." \
   --output output/report.md
 ```
 
@@ -160,4 +169,5 @@ python excel_to_md.py data/requests.xlsx \
 - [ ] Top-level `#` heading uses `--title` value, falling back to filename without extension
 - [ ] Output file defaults to same directory and name as input with `.md` extension
 - [ ] Missing file / sheet / column produces a clear error message
+- [ ] `--prefix` string is prepended to every heading value at all levels; empty by default (no prefix)
 - [ ] A `---` horizontal rule follows every heading at every level (`#`, `##`, `###`, `####`)

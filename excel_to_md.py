@@ -53,20 +53,25 @@ def validate_columns(df: pd.DataFrame, columns: list[str]) -> None:
 
 
 def build_markdown(
-    df: pd.DataFrame, title: str, type_label: str, title_col: str, columns: list[str]
+    df: pd.DataFrame,
+    title: str,
+    type_label: str,
+    title_col: str,
+    columns: list[str],
+    prefix: str,
 ) -> str:
     sub_cols = [c for c in columns if c != title_col]
-    lines = [f"# {title}", "", "---", "", f"## {type_label}", "", "---", ""]
+    lines = [f"# {prefix}{title}", "", "---", "", f"## {prefix}{type_label}", "", "---", ""]
 
     for _, row in df.iterrows():
         title_value = format_value(row[title_col])
-        lines.append(f"### {title_value}")
+        lines.append(f"### {prefix}{title_value}")
         lines.append("")
         lines.append("---")
         lines.append("")
 
         for col in sub_cols:
-            lines.append(f"#### {col}")
+            lines.append(f"#### {prefix}{col}")
             lines.append("")
             lines.append("---")
             lines.append("")
@@ -105,6 +110,11 @@ def parse_args() -> argparse.Namespace:
         help="Ordered list of columns to include (default: the 8 standard columns)",
     )
     parser.add_argument(
+        "--prefix",
+        default="",
+        help="String prepended to every heading value at all levels (default: none)",
+    )
+    parser.add_argument(
         "--output",
         type=Path,
         default=None,
@@ -124,7 +134,7 @@ def main() -> None:
     validate_columns(df, all_cols)
 
     title = args.title or args.file.stem
-    markdown = build_markdown(df, title, args.type, args.title_col, all_cols)
+    markdown = build_markdown(df, title, args.type, args.title_col, all_cols, args.prefix)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(markdown, encoding="utf-8")
