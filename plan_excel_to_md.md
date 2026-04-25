@@ -18,7 +18,8 @@ positional:
 
 options:
   --sheet TEXT          Sheet name to read (default: "Requests")
-  --title-col TEXT      Column used as the ## heading per row (default: "User Story")
+  --type TEXT           Label used as the ## grouping heading (default: "Demand Planning")
+  --title-col TEXT      Column used as the ### heading per row (default: "User Story")
   --columns TEXT [...]  Ordered list of columns to include (default: the 8 agreed columns)
   --output FILE         Output .md file path (default: same dir/name as input, .md extension)
 ```
@@ -40,27 +41,31 @@ options:
 
 ---
 
-## <title-col value for row 1>
+## <type>
 
 ---
 
-### Objective and key results
+### <title-col value for row 1>
+
+---
+
+#### Objective and key results
 
 ---
 
 ...content...
 
-### Status
+#### Status
 
 ---
 
 ...content...
 
-## <title-col value for row 2>
+### <title-col value for row 2>
 
 ---
 
-### Objective and key results
+#### Objective and key results
 
 ---
 
@@ -68,12 +73,13 @@ options:
 ```
 
 - Top-level `#` heading: input filename without extension
-- A `---` horizontal rule follows every heading (`#`, `##`, `###`)
-- One `##` section per row, using the value from `--title-col`
-- One `###` sub-section per remaining column (title column excluded)
+- `##` heading: fixed label from `--type` (default: "Demand Planning"), emitted once
+- `###` heading: one per row, value from `--title-col`
+- `####` heading: one per remaining column (title column excluded)
+- A `---` horizontal rule follows every heading at every level (`#`, `##`, `###`, `####`)
 - Sub-section order follows the order columns are defined in `--columns`
 - Empty/blank cells rendered as `N/A`
-- The title column (`--title-col`) does NOT appear as a `###` sub-section
+- The title column (`--title-col`) does NOT appear as a `####` sub-section
 
 ## Logic / Implementation Steps
 
@@ -81,12 +87,14 @@ options:
 2. Load the specified sheet from the Excel file using pandas
 3. Validate that all requested columns exist in the sheet; exit with a clear error if not
 4. Exclude the title column from the sub-section columns list
-5. For each row:
-   a. Emit `## <title-col value>` (or `## N/A` if blank)
+5. Emit `# <filename>` then `---`
+6. Emit `## <type>` then `---`
+7. For each row:
+   a. Emit `### <title-col value>` (or `### N/A` if blank) then `---`
    b. For each remaining column (in specified order):
-      - Emit `### <column name>`
+      - Emit `#### <column name>` then `---`
       - Emit the cell value; format datetime values as `yyyy.mm.dd`; blanks as `N/A`
-6. Write the full markdown string to the output file
+8. Write the full markdown string to the output file
 
 ## Date Handling
 - Auto-detect datetime columns via pandas dtype (no manual flagging needed)
@@ -99,7 +107,7 @@ options:
 
 ## Example Calls
 
-Default run (all 8 columns, sheet "Requests", title "User Story"):
+Default run (all 8 columns, sheet "Requests", type "Demand Planning", title "User Story"):
 ```bash
 python excel_to_md.py data/requests.xlsx
 # → writes data/requests.md
@@ -108,6 +116,11 @@ python excel_to_md.py data/requests.xlsx
 Different sheet:
 ```bash
 python excel_to_md.py data/requests.xlsx --sheet "Q2 Requests"
+```
+
+Custom type label:
+```bash
+python excel_to_md.py data/requests.xlsx --type "Supply Planning"
 ```
 
 Custom title column:
@@ -124,18 +137,20 @@ Full explicit call:
 ```bash
 python excel_to_md.py data/requests.xlsx \
   --sheet "Requests" \
+  --type "Demand Planning" \
   --title-col "User Story" \
   --columns "User Story" "Objective and key results" "People and responsabilities" "Status" "Request date" "Wanted date" "Priority" "Observations" \
   --output output/report.md
 ```
 
 ## Validation Checklist
-- [ ] One `##` section per row
-- [ ] Title column used as `##` heading, excluded from `###` sub-sections
-- [ ] Sub-sections follow `--columns` order
+- [ ] `##` type label emitted once, value from `--type` (default: "Demand Planning")
+- [ ] One `###` section per row, using the title column value
+- [ ] Title column used as `###` heading, excluded from `####` sub-sections
+- [ ] Sub-sections (`####`) follow `--columns` order
 - [ ] Empty cells render as `N/A`
 - [ ] Datetime columns formatted as `yyyy.mm.dd`
 - [ ] Top-level `#` heading is the input filename without extension
 - [ ] Output file defaults to same directory and name as input with `.md` extension
 - [ ] Missing file / sheet / column produces a clear error message
-- [ ] A `---` horizontal rule follows every heading at every level (`#`, `##`, `###`)
+- [ ] A `---` horizontal rule follows every heading at every level (`#`, `##`, `###`, `####`)
